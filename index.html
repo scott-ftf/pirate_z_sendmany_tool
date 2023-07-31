@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pirate z_sendmany Tool</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏴‍☠️</text></svg>">
+  <style>
+    body {
+      background-color: #333;
+      color:#cecece;
+      text-align: center;
+    }
+    .content {
+      width: 100%;
+      max-width: 800px;
+      margin: auto;
+      display: block;
+    }
+    #output {
+      width: 100%;
+      height: 100px;
+    }
+    #message-box {
+      border: 1px solid transparent;
+      margin-top: 10px;
+      padding: 10px;
+      color: rgb(255, 0, 0);
+    }
+    .address-input {
+      width: 500px;
+    }
+    .logo {
+      width: 100%;
+      max-width: 300px;
+      margin-top: 60px;
+      filter: drop-shadow(8px 8px 4px #00000069);
+    }
+    .readme {
+      display: block;
+      margin: 60px auto 40px;
+      width: 34px;
+      height: 34px;
+      text-align: center;
+      filter: drop-shadow(3px 3px 2px #00000069);
+    }
+    .readme svg {
+      display: block;
+      margin: auto;
+      filter: gray;
+      -webkit-filter: grayscale(100%);
+      transition: all 0.3s ease-in-out;
+    }
+    .readme svg:hover {
+      border-radius: 50%;
+      filter: none;
+      -webkit-filter: grayscale(0%);
+    }
+    p {
+      margin-bottom: 80px;
+    }
+    table {
+      margin:auto;
+      width: 100%;
+      text-align: left;
+    }
+    th {
+      text-align: left;
+      margin-bottom: 5px;
+      display: block;
+      color: #fff;
+    }
+    hr {
+      margin: 20px auto;
+      height: 1px;
+      background-color: #dec477;
+      border: none;
+    }
+    .address-input {
+      width: 98%;
+    }
+    .memo {
+      width: 95%;
+      min-height: 60px;
+      padding: 5px;
+    }
+    .count, .ignore, .copy-to-all {
+      display: block;
+      margin-bottom: 4px;
+    }
+    #total {
+      margin-top: 40px;
+      margin-bottom: 10px;
+      height: 20px;
+      display: block;
+    }
+    #add_output, #remaining_outputs {
+      float: left;
+      margin-right: 10px;
+    }
+    #message-box {
+      min-height: 20px;
+    }
+    #help {
+      margin-top: 60px;
+    }
+    #help h3, #help button {
+      display: inline;
+    }
+    #help pre {
+      margin: 10px auto 0px;
+      display: none;
+      background-color: #fff;
+      padding-block: 40px;
+      padding-inline: 20px;
+      width: 100%;
+      max-width: fit-content; 
+      overflow-x: auto;
+      text-align: left;
+    }
+    button {
+      cursor: pointer;
+    }
+    .lock {
+      width: 100%;
+      max-width: 10px;
+    }  
+    .generate {
+      display: block;
+    } 
+  </style>
+</head>
+<body>
+  <div class="content">
+    <img class="logo" src="https://raw.githubusercontent.com/PirateNetwork/mediakit/main/Logo%20Main/SVG/Pirate_Logo_WG.svg" />
+    <p>
+      Use this tool to generate a z_sendmany command for the pirate-cli RPC interface.
+    </p>
+    <table id="inputs">
+      <tr><th>INPUT</th></tr>
+      <tr>
+        <td>
+          <label>From address:</label>
+        </td>
+        <td colspan="3">
+          <input type="text" id="from_address" class="address-input" 
+                 placeholder="zs1..." required>
+        </td>
+      </tr>
+      <tr>        
+        <td>
+          <label>Minconf:</label>
+        </td>
+        <td>
+          <input type="number" id="minconf" value="1" required>
+        </td>
+        <td>
+          <label>Fee:</label>
+        </td>
+        <td>
+          <input type="number" id="fee" value="0.0001" step="0.00000001" min="0" required oninput="updateTotal()">
+        </td>
+      </tr>
+      <tr><td colspan="4"><hr /></td></tr>
+      <tr><th>OUTPUTS</th></tr>        
+    </table>
+    <button id="add_output">Add Output</button>
+    <div id="remaining_outputs">100 remaining</div>
+
+    <div id="total"></div>
+    <button id="generate">Generate CLI Command</button>
+    <div id="message-box"></div>
+    
+    <div class="output">
+      <h3>CLI Command:</h3>
+      <textarea id="output" readonly></textarea>
+    </div>
+  </div>
+
+  <div id="help">   
+    <h3>pirate-cli z_sendmany</h3>
+    <button>Help</button>
+    <pre>
+pirate-cli z_sendmany "fromaddress" [{"address":... ,"amount":...},...] ( minconf ) ( fee )
+
+Send multiple times. Amounts are decimal numbers with at most 8 digits of precision.
+Change generated from a zaddr returns to itself.
+When sending coinbase UTXOs to a zaddr, change is not allowed. The entire value of the UTXO(s) must be consumed.
+
+Arguments:
+1. "fromaddress"         (string, required) The zaddr to send the funds from.
+2. "amounts"             (array, required) An array of json objects representing the amounts to send.
+&nbsp;&nbsp;&nbsp;&nbsp;[{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"address":address  (string, required) The address is a zaddr
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"amount":amount    (numeric, required) The numeric amount in ARRR is the value
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"memo":memo        (string, optional) raw data represented in hexadecimal string format
+&nbsp;&nbsp;&nbsp;&nbsp;}, ... ]
+3. minconf               (numeric, optional, default=1) Only use funds confirmed at least this many times.
+4. fee                   (numeric, optional, default=0.0001) The fee amount to attach to this transaction.
+
+Result:
+"operationid"          (string) An operationid to pass to z_getoperationstatus to get the result of the operation.
+    </pre>
+  </div>
+
+  <a title="Readme" class="readme" id="readme" href="https://github.com/scott-ftf/pirate_z_sendmany_tool" target="_blank" rel="noopener" >
+    <svg version="1.1" x="0px" y="0px" viewBox="0 0 34 34" enable-background="new 0 0 1000 1000" xml:space="preserve" id="svg12" sodipodi:docname="github.svg" inkscape:version="1.1.2 (0a00cf5339, 2022-02-04)" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg"><defs id="defs16" /><sodipodi:namedview id="namedview14" pagecolor="#ffffff" bordercolor="#666666" borderopacity="1.0" inkscape:pageshadow="2" inkscape:pageopacity="0.0" inkscape:pagecheckerboard="0" showgrid="false" fit-margin-top="0" fit-margin-left="0" fit-margin-right="0" fit-margin-bottom="0" inkscape:zoom="0.3595" inkscape:cx="716.2726" inkscape:cy="724.61752" inkscape:window-width="1473" inkscape:window-height="1012" inkscape:window-x="26" inkscape:window-y="23" inkscape:window-maximized="0" inkscape:current-layer="svg12" /> <path style="fill:#3399db;fill-opacity:1;stroke-width:0.0247883" d="M 16.541418,34.00131 C 11.224002,33.862902 6.2804446,31.234291 3.1595279,26.885861 1.5388754,24.627765 0.48505958,21.944415 0.13240875,19.17782 c -0.176545,-1.385046 -0.176545,-2.970594 0,-4.35564 C 0.72781958,10.151075 3.2552804,5.9290829 7.1141529,3.1595279 9.3722346,1.5388754 12.055585,0.48505958 14.82218,0.13240875 c 1.385046,-0.176545 2.970594,-0.176545 4.35564,0 4.671119,0.59541083 8.893097,3.12287165 11.662652,6.98174415 1.620667,2.2580817 2.674468,4.9414321 3.027119,7.7080271 0.176545,1.385046 0.176545,2.970594 0,4.35564 -0.595411,4.671119 -3.122857,8.893097 -6.98173,11.662652 -2.50699,1.799294 -5.506583,2.887053 -8.584476,3.11304 -0.507081,0.03726 -1.318817,0.05922 -1.759967,0.04774 z m 1.216449,-3.306797 c 3.074634,-0.173783 5.950921,-1.341413 8.240297,-3.345133 2.243221,-1.963344 3.769381,-4.526915 4.397772,-7.38718 0.525541,-2.392055 0.399245,-4.922265 -0.361887,-7.25057 C 29.775252,11.919982 29.349997,10.960261 28.931641,10.223736 27.733014,8.1134979 25.895838,6.2765204 23.776278,5.0689112 20.439348,3.1677162 16.388602,2.7639379 12.71163,3.9659654 11.919982,4.2247479 10.960261,4.6500171 10.223736,5.0683587 8.1134979,6.2670004 6.2765204,8.1041621 5.0689112,10.223736 c -1.901195,3.336916 -2.3049733,7.387662 -1.1029458,11.064649 0.2587825,0.791633 0.6840517,1.751368 1.1023933,2.487893 0.7438634,1.309595 1.7563409,2.542817 2.9334917,3.573102 2.6765366,2.342572 6.1885526,3.546781 9.7560166,3.345133 z m -2.35671,-2.908898 c 0,-0.0057 0.04505,-0.06389 0.100017,-0.130192 0.05497,-0.0663 0.130333,-0.181801 0.167322,-0.256785 l 0.06729,-0.136283 0.0071,-2.10266 0.0071,-2.102645 -0.05638,0.01686 c -0.0884,0.02635 -0.163384,0.08089 -0.210899,0.153411 -0.04052,0.06177 -0.04463,0.202172 -0.0561,1.889762 l -0.01275,1.823066 -0.05964,0.120275 c -0.132033,0.266092 -0.414134,0.483126 -0.783105,0.602551 -0.159063,0.05143 -0.26452,0.06673 -0.53295,0.07678 l -0.334645,0.01275 0.129342,-0.11645 c 0.08401,-0.07565 0.157916,-0.174448 0.210701,-0.281647 l 0.08132,-0.165155 0.0071,-1.416044 0.0071,-1.416043 -0.763016,-0.01459 C 12.55955,24.326993 12.304848,24.299226 11.988308,24.191361 11.572814,24.049695 11.233593,23.818594 10.935994,23.474386 10.723196,23.228255 10.571245,22.99534 10.221427,22.379147 10.066628,22.106481 9.8754062,21.786966 9.7964979,21.6691 c -0.26435,-0.394783 -0.5775608,-0.710586 -0.86887,-0.876067 -0.14025,-0.07962 -0.088258,-0.09931 0.2049209,-0.07721 0.5526416,0.04165 0.9572132,0.263287 1.6593132,0.908735 0.64838,0.596076 0.838157,0.741894 1.171158,0.899923 0.34935,0.165778 0.39076,0.171601 1.299197,0.18275 l 0.822758,0.0099 0.01558,-0.09477 c 0.02564,-0.155465 0.111775,-0.43156 0.185371,-0.593881 0.106675,-0.23528 0.259816,-0.445811 0.512861,-0.704934 l 0.231781,-0.237348 -0.242066,-0.03117 c -0.133166,-0.01714 -0.409388,-0.06403 -0.613884,-0.104266 -1.853963,-0.364565 -3.141883,-1.119946 -3.936761,-2.308983 -0.08897,-0.133025 -0.165863,-0.254306 -0.170906,-0.269407 -0.01417,-0.04179 -1.2350786,-0.03074 -1.7688928,0.01601 -0.6352475,0.05567 -1.0404991,0.118575 -1.77429,0.275712 -0.058083,0.01275 -0.067717,0.0042 -0.083017,-0.06531 -0.00992,-0.04363 -0.00708,-0.08911 0.00425,-0.101008 0.035133,-0.03513 0.8539383,-0.188912 1.2971141,-0.243667 0.5700384,-0.07041 1.0835659,-0.101575 1.67518,-0.101575 0.2784034,0 0.5061892,-0.0099 0.5061892,-0.02168 0,-0.01133 -0.027058,-0.08288 -0.060208,-0.157717 l -0.060208,-0.136 -0.1494441,-0.01686 c -0.5510834,-0.06233 -2.3118867,-0.05723 -3.0518825,0.0085 -0.1567825,0.01417 -0.3219942,0.02564 -0.3671292,0.02564 -0.079617,1.99e-4 -0.081883,-0.0028 -0.074375,-0.09279 l 0.00708,-0.09293 0.3594367,-0.03032 c 0.539495,-0.04547 2.1894725,-0.06687 2.7129875,-0.03528 0.2446583,0.01473 0.4500467,0.02168 0.4564075,0.0153 0.00567,-0.0057 -0.023375,-0.131467 -0.066017,-0.278135 -0.3410341,-1.171016 -0.3601308,-2.527999 -0.050717,-3.598871 0.1986308,-0.687296 0.5090226,-1.258284 0.9801206,-1.803006 l 0.132175,-0.152844 -0.04774,-0.206593 C 10.478,10.860769 10.476937,9.9176088 10.641143,9.1166538 c 0.02791,-0.1362834 0.0612,-0.28135 0.07381,-0.3222492 0.01275,-0.040942 0.03528,-0.121975 0.05029,-0.180285 l 0.02734,-0.1059667 0.166203,0.01445 c 1.044409,0.090808 2.036997,0.4367725 2.99591,1.044225 l 0.251713,0.15946 0.33082,-0.063042 c 0.796705,-0.1516967 1.528314,-0.2179967 2.413023,-0.2186767 0.888037,-6.8e-4 1.601428,0.061908 2.483487,0.2179825 l 0.351688,0.062192 0.245947,-0.1611459 C 20.892608,8.999297 21.882504,8.6526103 23.002861,8.522872 l 0.128208,-0.014875 0.04123,0.142035 c 0.277993,0.95625 0.363404,1.847914 0.2567,2.679668 l -0.02635,0.20536 0.147461,0.191264 c 0.4267,0.553421 0.76415,1.203954 0.992871,1.914044 0.207329,0.643691 0.286762,1.189207 0.285161,1.958272 -0.0014,0.739217 -0.0476,1.145163 -0.197455,1.741098 -0.03683,0.146398 -0.06106,0.272127 -0.05369,0.279381 0.0071,0.0071 0.229571,4.39e-4 0.493992,-0.01516 0.557727,-0.03287 2.158461,-0.01275 2.736518,0.03414 l 0.371833,0.03032 -0.0085,0.0867 c -0.0042,0.04774 -0.01275,0.09109 -0.01799,0.09647 -0.0057,0.0057 -0.179874,-0.0042 -0.388124,-0.02082 -0.865314,-0.06984 -2.445167,-0.07579 -3.096947,-0.01133 l -0.173131,0.017 -0.06021,0.136 c -0.03315,0.0748 -0.06021,0.144231 -0.06021,0.154233 0,0.0099 0.343017,0.02465 0.762237,0.03258 0.965713,0.01813 1.543118,0.07777 2.361088,0.243724 0.457767,0.09293 0.423158,0.07777 0.396029,0.172422 -0.01275,0.04349 -0.02777,0.08415 -0.03414,0.09052 -0.0057,0.0057 -0.109792,-0.01133 -0.230052,-0.03967 -0.309783,-0.07253 -0.900859,-0.1683 -1.321651,-0.214285 -0.40188,-0.04392 -1.417559,-0.08146 -1.797155,-0.06644 l -0.247889,0.0099 -0.123958,0.222134 c -0.486597,0.872185 -1.354262,1.599785 -2.429243,2.037152 -0.547514,0.222757 -1.279052,0.429434 -1.821947,0.514732 -0.102283,0.01601 -0.199353,0.03612 -0.215772,0.04462 -0.01969,0.0099 0.01643,0.0731 0.106675,0.185682 0.18469,0.230322 0.340042,0.501642 0.430751,0.752335 0.147999,0.40902 0.149303,0.432325 0.149303,2.684371 0,1.915985 0.0028,2.061562 0.04519,2.196712 0.06063,0.194211 0.154502,0.336487 0.335878,0.509079 l 0.15113,0.14382 H 20.75994 c -0.393876,0 -0.871165,-0.09605 -1.162106,-0.233906 -0.316243,-0.149826 -0.48025,-0.351531 -0.529295,-0.650972 -0.01275,-0.08075 -0.02366,-0.876648 -0.02366,-1.81322 -1.13e-4,-1.492699 -0.0042,-1.676569 -0.04023,-1.737216 -0.04802,-0.08132 -0.09577,-0.113475 -0.203362,-0.137133 l -0.08061,-0.01771 0.0071,2.090589 0.0071,2.09059 0.07848,0.16558 c 0.04321,0.09109 0.125375,0.216551 0.182878,0.278856 l 0.104408,0.113334 -0.220051,-2.55e-4 c -0.727373,-6.24e-4 -1.232939,-0.27642 -1.395416,-0.761275 -0.05057,-0.150719 -0.05171,-0.194805 -0.05171,-2.023637 0,-1.767363 -0.0028,-1.872578 -0.04491,-1.924967 -0.05454,-0.06729 -0.160905,-0.07253 -0.228622,-0.01133 -0.0476,0.04321 -0.04873,0.08628 -0.04873,1.956176 0,2.081565 -1.56e-4,2.084044 -0.139683,2.294971 -0.144996,0.219088 -0.45009,0.366124 -0.901369,0.434379 -0.213052,0.03216 -0.66929,0.05015 -0.66929,0.02621 z M 13.899873,23.19934 c 0.151286,-0.06318 0.138408,-0.209199 -0.02309,-0.262522 -0.07338,-0.02422 -0.101716,-0.02167 -0.179916,0.01657 -0.0765,0.0374 -0.09279,0.05837 -0.09279,0.119708 0,0.06021 0.01657,0.08259 0.0867,0.117725 0.104692,0.05227 0.104408,0.05227 0.209114,0.0085 z m -0.654061,-0.02763 c 0.05567,-0.02876 0.0731,-0.05511 0.0731,-0.110075 0,-0.148523 -0.241343,-0.207867 -0.360556,-0.08868 -0.03343,0.03343 -0.06092,0.07296 -0.06092,0.08783 0,0.01487 0.02734,0.0544 0.06092,0.08783 0.07083,0.07083 0.178373,0.07947 0.287428,0.02309 z m -0.676033,-0.0255 c 0.06432,-0.04505 0.07437,-0.16242 0.01785,-0.209312 -0.0204,-0.017 -0.08656,-0.03641 -0.146852,-0.04321 -0.09393,-0.0099 -0.118858,-0.0028 -0.173499,0.05142 -0.07919,0.07919 -0.07962,0.102283 -0.0028,0.178783 0.07183,0.07183 0.219342,0.08259 0.305475,0.02224 z m -0.65025,-0.22056 c 0.03343,-0.03343 0.06092,-0.07296 0.06092,-0.08783 0,-0.06049 -0.122258,-0.148736 -0.206238,-0.148736 -0.105683,0 -0.215163,0.08217 -0.215163,0.161529 0,0.135575 0.248384,0.187255 0.360556,0.07508 z m -0.529125,-0.36184 c 0.07664,-0.09237 -0.0043,-0.19703 -0.152901,-0.19703 -0.164093,0 -0.254193,0.117866 -0.155706,0.203631 0.09506,0.08273 0.236853,0.07976 0.308607,-0.0071 z m -0.415565,-0.368773 c 0.05653,-0.06262 0.03202,-0.136992 -0.05737,-0.174052 -0.152703,-0.06318 -0.31127,0.06446 -0.213789,0.172182 0.05992,0.06616 0.21206,0.06715 0.271164,0.0014 z M 10.62682,21.817609 c 0.04774,-0.06814 0.01431,-0.137842 -0.07693,-0.160806 -0.07593,-0.01898 -0.18877,0.03414 -0.200373,0.09435 -0.02168,0.112483 0.206734,0.167294 0.277341,0.06644 z m -0.355215,-0.294497 c 0.09548,-0.051 0.04193,-0.172649 -0.07593,-0.172649 -0.115033,0 -0.170935,0.118858 -0.08061,0.17153 0.05596,0.03258 0.09718,0.03287 0.156556,0.0011 z M 9.9471037,21.25131 c 0.035983,0 0.05185,-0.07976 0.022808,-0.11475 -0.038817,-0.04675 -0.133875,-0.04278 -0.184535,0.0085 -0.039383,0.03938 -0.038533,0.04477 0.014733,0.08783 0.031167,0.02522 0.072533,0.03981 0.0918,0.03244 0.019267,-0.0071 0.0442,-0.01417 0.05525,-0.01417 z M 9.6502696,21.015818 c 0.040658,-0.04902 -0.0085,-0.111492 -0.0867,-0.111492 -0.078908,0 -0.1275,0.06247 -0.0867,0.111492 0.017,0.0204 0.055958,0.03726 0.0867,0.03726 0.030742,0 0.069842,-0.01672 0.0867,-0.03726 z" id="path4737" /></svg> 
+  </a>       
+
+<script>
+// Variables
+var remainingOutputs = 100;
+
+// Event listener to add new output fields
+document.getElementById("add_output").addEventListener("click", function () {
+  if (remainingOutputs > 0) {
+    // Get the table element
+    var table = document.getElementById("inputs");
+
+    // Row 1: To Address
+    var tr1 = document.createElement("tr");
+    var td1_1 = document.createElement("td");
+    var td1_2 = document.createElement("td");
+    td1_2.colSpan = 3;
+    td1_1.innerHTML = `<label>To address: </label>`;
+    td1_2.innerHTML = `<input type="text" class="to_address address-input" placeholder="zs1..." required>`;
+    tr1.appendChild(td1_1);
+    tr1.appendChild(td1_2);
+    table.appendChild(tr1);
+
+    // Row 2: Amount and Add Memo button
+    var tr2 = document.createElement("tr");
+    var td2_1 = document.createElement("td");
+    var td2_2 = document.createElement("td");
+    td2_2.colSpan = 2;
+    td2_1.innerHTML = `<label>Amount: </label>`;
+    td2_2.innerHTML = `<input type="number" class="amount" required step="0.00000001" min="0" oninput="updateTotal()">`;
+
+    var td2_3 = document.createElement("td");
+    td2_3.innerHTML = `<button class="add-memo">Add Memo</button>`;
+    tr2.appendChild(td2_1);
+    tr2.appendChild(td2_2);
+    tr2.appendChild(td2_3);
+    table.appendChild(tr2);
+
+    // Row 3: Memo field (hidden initially) and related elements
+    var tr3 = document.createElement("tr");
+    tr3.style.display = 'none'; // Make tr3 invisible initially
+    var td3_1 = document.createElement("td");
+    td3_1.innerHTML = `<label>Memo:</label>`;
+    var td3_2 = document.createElement("td");
+    td3_2.colSpan = 2;
+    var textarea = document.createElement("textarea");
+    textarea.className = "memo";
+    textarea.maxLength = 512;
+    td3_2.appendChild(textarea);
+
+    var td3_3 = document.createElement("td");
+    td3_3.innerHTML = `<div class="ignore">
+                        <label for="ignore" title="Prevent this memo from being altered when copy-to-all is used">lock</label>
+                        <input type="checkbox" class="ignore-checkbox">                         
+                        </div>
+                        <button class="copy-to-all">Copy to All</button>
+                        <span class="count">512 remaining</span>`;
+    tr3.appendChild(td3_1);
+    tr3.appendChild(td3_2);
+    tr3.appendChild(td3_3);
+    table.appendChild(tr3);
+
+    textarea.oninput = function () {
+      updateCount(this, tr3);
+    };
+
+    // Event listener for the "Add Memo" button
+    tr2.querySelector('.add-memo').addEventListener('click', function (event) {
+      tr3.style.display = 'table-row'; // Make tr3 visible when the button is clicked
+      this.style.display = "none"; // Hide the button
+    });
+
+    // Event listener for the "Copy to All" button
+    td3_3.querySelector(".copy-to-all").addEventListener("click", function () {
+      var memo = td3_2.firstElementChild.value;
+      Array.from(document.getElementsByClassName("memo")).forEach(memoField => {
+        // Check if memoField is visible and its associated checkbox is not checked
+        var tr = memoField.parentNode.parentNode;
+        var ignoreCheckbox = tr.querySelector('.ignore-checkbox');
+        if (tr.style.display != 'none' && !ignoreCheckbox.checked) {
+          memoField.value = memo;
+          var counter = tr.querySelector('.count');
+          counter.innerText = `${512 - memo.length} remaining`;
+        }
+      });
+    });
+
+    remainingOutputs--;
+    document.getElementById("remaining_outputs").innerText = remainingOutputs + " remaining";
+  }
+});
+
+// Function to update character count in the memo field
+function updateCount(textAreaElement, trElement) {
+  var counter = trElement.querySelector('.count');
+  counter.innerText = `${512 - textAreaElement.value.length} remaining`;
+}
+
+// Function to update the total amount and display a warning if the fee is low
+function updateTotal() {
+  var fee = parseFloat(document.getElementById("fee").value) || 0;
+  if (fee < 0.0001) {
+    showMessage("Warning: Fee below 0.0001. The network may not accept the transaction.");
+  } else {
+    showMessage("");
+  }
+  var amounts = Array.from(document.getElementsByClassName("amount")).map(input => parseFloat(input.value) || 0);
+  var total = amounts.reduce((sum, current) => sum + current, fee);
+  var totalAddresses = amounts.length;
+  document.getElementById("total").innerText = `Sending ${parseFloat(total.toFixed(8))} ARRR to ${totalAddresses} addresses (${parseFloat(fee.toFixed(8))} fee)`;
+}
+
+// Function to display a message in the message box
+function showMessage(msg) {
+  document.getElementById("message-box").innerText = msg;
+}
+
+// Function to check if an address is a valid sapling address
+function isSaplingAddress(address) {
+  return address.startsWith('zs') && address.length === 78;
+}
+
+// Helper function for converting memo text to hex
+function stringToHex(input) {
+  // Create a Uint8Array from the string
+  var uint8array = new TextEncoder().encode(input);
+  var wasTruncated = false;
+
+  // If it's longer than 512 bytes, truncate it
+  if (uint8array.length > 512) {
+      uint8array = uint8array.slice(0, 512);
+      wasTruncated = true;
+  }
+
+  // Convert the Uint8Array to a hex string
+  var hex = Array.from(uint8array).map(b => ('00' + b.toString(16)).slice(-2)).join('');
+
+  return {
+      result: hex,
+      wasTruncated: wasTruncated
+  };
+}
+
+// Event listener for the "Generate Command" button
+document.getElementById("generate").addEventListener("click", function () {
+  var fromAddress = document.getElementById("from_address").value.trim(); // Strip leading and trailing white spaces
+  var minconf = document.getElementById("minconf").value.trim(); // Strip leading and trailing white spaces
+  var fee = parseFloat(document.getElementById("fee").value);
+
+  if (!isSaplingAddress(fromAddress)) {
+    showMessage("From address is not a valid sapling address");
+    return;
+  }
+
+  // Check that the from_address, minconf, and fee fields are filled out
+  if (!fromAddress || !minconf || fee === null) {
+    showMessage("From address, minconf, and fee are required");
+    return;
+  }
+
+  if (fee < 0.0001) {
+    showMessage("Warning: Fee below 0.0001. The network may not accept the transaction.");
+    return;
+  }
+
+  var outputs = [];
+  var outputRows = document.getElementById("inputs").getElementsByTagName("tr");
+  var wasAnyMemoTruncated = false;
+
+  for (let i = 0; i < outputRows.length; i++) {
+    if (outputRows[i].getElementsByClassName("to_address").length > 0) {
+      var toAddressInput = outputRows[i].getElementsByClassName("to_address")[0];
+      var amountInput = outputRows[i + 1].getElementsByClassName("amount")[0];
+      var memoInput = outputRows[i + 2].getElementsByClassName("memo")[0];
+
+      if (!isSaplingAddress(toAddressInput.value)) {
+        showMessage("To address is not a valid sapling address");
+        return;
+      }
+
+      if (!toAddressInput.value || !amountInput.value) {
+        showMessage("To address and amount are required for each output");
+        return;
+      }
+
+      var memoHexData = stringToHex(memoInput.value);
+      if (memoHexData.wasTruncated) {
+        wasAnyMemoTruncated = true;
+      }
+
+      var output = `{address: "${toAddressInput.value}", amount: ${amountInput.value}, memo: "${memoHexData.result}"}`;
+      outputs.push(output);
+    }
+  }
+
+  var command = `z_sendmany "${fromAddress}" '[${outputs.join(", ")}]' ${minconf} ${fee.toFixed(8)}`;
+  document.getElementById("output").value = command;
+
+    if (wasAnyMemoTruncated) {
+      showMessage("Warning: One or more memos were truncated because they exceeded the 512 byte limit.");
+    } else {
+      showMessage(""); // Clear any previous messages
+    }
+});
+
+// Trigger the "Add Output" button click event after the page has loaded
+window.onload = function () {
+  document.getElementById("add_output").click();
+};
+
+// Event listener to show/hide the help information
+document.querySelector('#help button').addEventListener('click', function () {
+  var preElement = document.querySelector('#help pre');
+  if (!preElement.style.display || preElement.style.display === "none") {
+    preElement.style.display = "block";
+  } else {
+    preElement.style.display = "none";
+  }
+});
+
+</script>
+</body>
+</html>
