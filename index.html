@@ -351,7 +351,8 @@ function updateTotal() {
   });
   var total = amounts.reduce((sum, current) => sum + current, fee);
   var totalAddresses = amounts.length;
-  document.getElementById("total").innerText = `Sending ${parseFloat(total.toFixed(8))} ARRR to ${totalAddresses} addresses (${parseFloat(fee.toFixed(8))} fee)`;
+  var addressString = totalAddresses === 1 ? "address" : "addresses";
+  document.getElementById("total").innerText = `Sending ${parseFloat(total.toFixed(8))} ARRR to ${totalAddresses} ${addressString} (${parseFloat(fee.toFixed(8))} fee)`;
 }
 
 // display a message in the message box
