@@ -5,4 +5,4 @@
 
 This is a simple web app tool for learning Pirate rpc commands. It takes inputs to generate a Pirate Chain z_sendmay RPC command for inputing into pirate-cli. 
 
-Access online: [https://scott-ftf.github.io/warrr.web3.tool/pirate_z_sendmany_tool](https://scott-ftf.github.io/warrr.web3.tool/pirate_z_sendmany_tool). 
+Access online: [https://scott-ftf.github.io/pirate_z_sendmany_tool](https://scott-ftf.github.io/pirate_z_sendmany_tool). 
