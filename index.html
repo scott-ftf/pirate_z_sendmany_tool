@@ -446,7 +446,7 @@ document.getElementById("generate").addEventListener("click", function () {
     }
   }
 
-  var command = `z_sendmany "${fromAddress}" "[${outputs.join(", ")}]" ${minconf} ${fee.toFixed(8)}`;
+  var command = `pirate-cli z_sendmany "${fromAddress}" "[${outputs.join(", ")}]" ${minconf} ${fee.toFixed(8)}`;
   document.getElementById("output").value = command;
 
   if (wasAnyMemoTruncated) {
